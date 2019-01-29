@@ -1,0 +1,187 @@
+﻿<!doctype html>
+<html>
+	<head>
+		<script type="text/javascript" src="js/jquery.js"></script>
+		<link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>  
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />  
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>  
+	</head>
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="col-lg-12">
+					<button class="btn btn-primary" id="btnAdd">ADD</button>
+					<table class="table" id="egesztabla">
+						<thead>
+							<th>#</th>
+							<th>Név</th>
+							<th>Jelzó</th>
+							<th>Email</th>
+							<th>Törlés</th>
+							<th>Módositás</th>
+						</thead>
+						<tbody id="tbody">
+
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+	<div id="add_data_Modal" class="modal fade">  
+      <div class="modal-dialog">  
+           <div class="modal-content">  
+                <div class="modal-header">  
+                     <button type="button" class="close" data-dismiss="modal">&times;</button>  
+                     <h4 class="modal-title"></h4>  
+                </div>  
+                <div class="modal-body">  
+                     <form method="post" id="insert_form">  
+                          <label>név</label>  
+                          <input type="text" name="name" id="name" class="form-control" />  
+                          <br />  
+                          <label>Jelszó</label>  
+                          <input type="password" name="password" id="password" class="form-control"></input>  
+                          <br />  
+                          <label>email</label>
+                          <input type="text" name="email" id="email" class="form-control"></input>  
+                          <br />
+                          <input type="hidden" name="id" id="id" />  
+                          <input type="submit" name="insert" id="insert" value="Insert" class="btn btn-success btn_update" />  
+                     </form>  
+                </div>  
+                <div class="modal-footer">  
+                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>  
+                </div>  
+           </div>  
+      </div>  
+ </div>  
+	<script>
+	var id,nev,email,jelszó,idszamlalo;
+	var szamlalo;
+			function sorhozzadas(){
+				$.getJSON("php/select.php",function(adat){
+					var sorok;
+					for (szamlalo = 0 ; szamlalo < adat.length; szamlalo++) {
+						sorok+= "<tr> <td> <p>"+ adat[szamlalo].user_id+" </p> </td>";
+						sorok+= "<td> <p>"+ adat[szamlalo].user_name + "</p> </td>";
+						sorok+= "<td> <p>"+ adat[szamlalo].user_password+"</p> </td>";
+						sorok+="<td> <p>" + adat[szamlalo].user_email +" </p> </td>";
+						sorok+='<td><button class="btn btn-xs btn-danger btn_delete" value='+adat[szamlalo].user_id+' id="btndel">Törlés</button></td>';
+						sorok+='<td><button   class="btn btn-info btn-xs edit_data" value='+adat[szamlalo].user_id+' id="myModal">Módositás</button></td>';
+						idszamlalo=adat[szamlalo].user_id;
+					}
+					$("#tbody").html(sorok);
+				});
+
+			}
+			$(document).on('click', '.edit_data', function(){
+				var modositasid=$(this).attr("value");
+				$.ajax({
+					url:"php/fetch.php",
+					method:"POST",
+					data:{user_id:modositasid},
+					dataType:"json",
+					success:function(data){
+						$('#name').val(data.user_name);
+						$('#password').val(data.user_password);
+						$('#email').val(data.user_email);
+						$('#id').val(data.user_id);
+						$('#insert').val("update");
+						$('#add_data_Modal').modal('show');
+					}
+				});
+			});
+			$(document).on('click', '.btn_update', function(){
+				var modositid=$('#id').val();
+				var modositnev=$('#name').val();
+				var modostjelszo=$('#password').val();
+				var modositemail=$('#email').val();
+				$.ajax({
+					url:"php/update.php",
+					method:"POST",
+					data:{
+						user_id:modositid,
+						user_name:modositnev,
+						user_password:modostjelszo,
+						user_email:modositemail
+					},
+					dataType:"json",
+					success:function(data){
+						if (data=="1") {
+							sorhozzadas();
+						}
+						else{
+							alert("SZOPD KI");
+						}
+						
+					}
+				});
+			});
+			sorhozzadas();
+		$( "#btnAdd" ).click(function() {
+			idszamlalo++;
+			var ujsor = "<tr id='torlendosor'><td>";
+			ujsor += '<input type="number" id="ujid" readonly placeholder='+idszamlalo+'></td>';
+			ujsor+= '<td><input type="text" id="ujnev" placeholder="név"></td>';
+			ujsor+= '<td><input type="password" id="ujjelszo" placeholder="jelszo"></td>';
+			ujsor+= '<td><input type="text" id="ujemail" placeholder="email"></td>';
+			ujsor+= '<td><button class="btn btn-success" id="btnRog">Rögzít</button></td>';
+			$( "#tbody" ).append(ujsor);
+		});
+
+		$("#tbody").delegate("#btnRog","click",function() {
+
+				id = $("#ujid").val();
+				nev =  $("#ujnev").val();
+				jelszo=$("#ujjelszo").val();
+				email = $("#ujemail").val();
+				$("#torlendosor").remove();
+				$.ajax({
+					url: "php/insert.php",//fájl eléris útja
+					method: "POST", // értelem szerűen GET vagy PUT vagy POST
+					data:{
+							user_id: id,
+							user_name: nev,
+							user_password: jelszo,
+							user_email: email 
+					}, //az adatok átküldése amit a szerveren akarsz használni
+					success: function(data){
+						if (data=="1") 
+						{
+							sorhozzadas();
+						}
+						else{
+							alert("szopd ki");
+						}
+						//amit csináljon ha sikeresen lefut, a data váltózóban lesznek a szerver álltal visszaküldöt adatok
+						// PHP esetén: echo "";
+					}
+				});
+		});
+			$("#tbody").delegate(".btn_delete","click",function() {
+
+				torlendoid =  $(this).val();
+				$.ajax({
+					url: "php/delete.php",//fájl eléris útja
+					method: "POST", // értelem szerűen GET vagy PUT vagy POST
+					data:{
+							user_id: torlendoid,
+					}, //az adatok átküldése amit a szerveren akarsz használni
+					success: function(data){
+						if (data=="1") 
+						{
+							sorhozzadas();
+						}
+						else{
+							alert(torlendoid);
+						}
+						//amit csináljon ha sikeresen lefut, a data váltózóban lesznek a szerver álltal visszaküldöt adatok
+						// PHP esetén: echo "";
+					}
+				});
+		});
+	</script>
+
